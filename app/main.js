@@ -7,6 +7,7 @@ import Assets from './custom-components/assets';
 import TexturedBall from './custom-components/textured-ball';
 import SongPillar from './custom-components/song-pillar';
 import FloatingAlbum from './custom-components/floating-album';
+import Controller from './custom-components/controller';
 
 class Main extends Component {
 
@@ -26,6 +27,7 @@ class Main extends Component {
           static-body
           scale="100 100 100"
         />
+        <Controller />
         <EnvironmentChanger />
         <SceneCamera />
         <FloatingAlbum pos={{x: 0, y: 3.3, z: -2}} />

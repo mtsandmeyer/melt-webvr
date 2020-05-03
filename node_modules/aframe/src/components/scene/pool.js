@@ -4,18 +4,16 @@ var registerComponent = require('../../core/component').registerComponent;
 var warn = debug('components:pool:warn');
 
 /**
- * Pool component.
- * A pool of entities that will be reused.
- * It avoids creating and destroying the same kind of entities
- * in dynamic scenes. It will help reduce GC pauses. Useful for example
- * in a game where you want to reuse enemies entities.
+ * Pool component to reuse entities.
+ * Avoids creating and destroying the same kind of entities.
+ * Helps reduce GC pauses. For example in a game to reuse enemies entities.
  *
  * @member {array} availableEls - Available entities in the pool.
  * @member {array} usedEls - Entities of the pool in use.
- *
  */
 module.exports.Component = registerComponent('pool', {
   schema: {
+    container: {default: ''},
     mixin: {default: ''},
     size: {default: 0},
     dynamic: {default: false}
@@ -25,10 +23,22 @@ module.exports.Component = registerComponent('pool', {
 
   initPool: function () {
     var i;
-    var mixin = this.data.mixin;
-    if (!mixin) { return; }
+
     this.availableEls = [];
     this.usedEls = [];
+
+    if (!this.data.mixin) {
+      warn('No mixin provided for pool component.');
+    }
+
+    if (this.data.container) {
+      this.container = document.querySelector(this.data.container);
+      if (!this.container) {
+        warn('Container ' + this.data.container + ' not found.');
+      }
+    }
+    this.container = this.container || this.el;
+
     for (i = 0; i < this.data.size; ++i) {
       this.createEntity();
     }
@@ -45,17 +55,19 @@ module.exports.Component = registerComponent('pool', {
    * Add a new entity to the list of available entities.
    */
   createEntity: function () {
-    var el = document.createElement('a-entity');
+    var el;
+    el = document.createElement('a-entity');
     el.play = this.wrapPlay(el.play);
     el.setAttribute('mixin', this.data.mixin);
-    el.setAttribute('visible', false);
-    this.el.appendChild(el);
+    el.object3D.visible = false;
+    el.pause();
+    this.container.appendChild(el);
     this.availableEls.push(el);
   },
 
   /**
-   * Play wrapper for pooled entities. When pausing and playing
-   * a scene we don't want to play the entities that are not in use
+   * Play wrapper for pooled entities. When pausing and playing a scene, don't want to play
+   * entities that are not in use.
    */
   wrapPlay: function (playMethod) {
     var usedEls = this.usedEls;
@@ -66,28 +78,28 @@ module.exports.Component = registerComponent('pool', {
   },
 
   /**
-   * Used to request one of the available entities of the pool
+   * Used to request one of the available entities of the pool.
    */
   requestEntity: function () {
     var el;
     if (this.availableEls.length === 0) {
       if (this.data.dynamic === false) {
-        warn('Requested entity from empty pool ' + this.name);
+        warn('Requested entity from empty pool: ' + this.name);
         return;
       } else {
-        warn('Requested entity from empty pool. This pool is dynamic' +
-        'and will resize automatically. You might want to increase its initial size' + this.name);
+        warn('Requested entity from empty pool. This pool is dynamic and will resize ' +
+             'automatically. You might want to increase its initial size: ' + this.name);
       }
       this.createEntity();
     }
     el = this.availableEls.shift();
     this.usedEls.push(el);
-    el.setAttribute('visible', true);
+    el.object3D.visible = true;
     return el;
   },
 
   /**
-   * Used to return a used entity to the pool
+   * Used to return a used entity to the pool.
    */
   returnEntity: function (el) {
     var index = this.usedEls.indexOf(el);
@@ -97,7 +109,8 @@ module.exports.Component = registerComponent('pool', {
     }
     this.usedEls.splice(index, 1);
     this.availableEls.push(el);
-    el.setAttribute('visible', false);
+    el.object3D.visible = false;
     el.pause();
+    return el;
   }
 });

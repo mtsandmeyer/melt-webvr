@@ -55,8 +55,15 @@ export class EnvironmentChanger extends Component {
   }
 
   render() {
+    AFRAME.registerComponent(`environment-changer`, {
+      init: function() {
+        this.el.addEventListener('my-triggerdown', e => this.handleClick());
+      },
+    });
+
     return (
       <Entity
+        environment-changer
         class="clickable"
         animation__rotate={{
           property: 'rotation',
